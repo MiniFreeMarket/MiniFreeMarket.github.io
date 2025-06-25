@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Танчики</title>
+  <style>
+    body {
+      background: #222;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    canvas {
+      background: #333;
+      border: 2px solid #fff;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body>
+<canvas id="game" width="416" height="416"></canvas>
+<script>
+const CELL = 32;
+const ROWS = 13;
+const COLS = 13;
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+// Карта: 0 — пусто, 1 — кирпич
+const map = [
+  [1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,1,1,0,1,1,1,0,1,1,0,1],
+  [1,0,1,0,0,0,0,0,0,0,1,0,1],
+  [1,0,1,0,1,1,1,1,1,0,1,0,1],
+  [1,0,0,0,1,0,0,0,1,0,0,0,1],
+  [1,0,1,0,1,0,1,0,1,0,1,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,1,1,1,1,1,1,1,1,1,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,0,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1],
+];
+
+// Игрок
+const player = {
+  x: 6, // координаты в клетках
+  y: 11,
+  dir: 'up', // 'up', 'down', 'left', 'right'
+  color: '#4af',
+  size: CELL - 6,
+  speed: 2,
+  cooldown: 0
+};
+
+// Снаряды
+const bullets = [];
+
+function drawMap() {
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      if (map[y][x] === 1) {
+        ctx.fillStyle = '#b55';
+        ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
+        ctx.strokeStyle = '#833';
+        ctx.strokeRect(x*CELL, y*CELL, CELL, CELL);
+      }
+    }
+  }
+}
+
+function drawPlayer() {
+  ctx.save();
+  ctx.translate(player.x*CELL + CELL/2, player.y*CELL + CELL/2);
+  let angle = 0;
+  if (player.dir === 'up') angle = 0;
+  if (player.dir === 'right') angle = Math.PI/2;
+  if (player.dir === 'down') angle = Math.PI;
+  if (player.dir === 'left') angle = -Math.PI/2;
+  ctx.rotate(angle);
+
+  // Тело
+  ctx.fillStyle = player.color;
+  ctx.fillRect(-player.size/2, -player.size/2, player.size, player.size);
+
+  // Дуло
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(-4, -player.size/2-8, 8, 12);
+
+  ctx.restore();
+}
+
+function drawBullets() {
+  for (const b of bullets) {
+    ctx.fillStyle = '#ff0';
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, 5, 0, 2*Math.PI);
+    ctx.fill();
+  }
+}
+
+function movePlayer(dx, dy, dir) {
+  const nx = player.x + dx;
+  const ny = player.y + dy;
+  if (
+    nx >= 0 && nx < COLS &&
+    ny >= 0 && ny < ROWS &&
+    map[ny][nx] === 0
+  ) {
+    player.x = nx;
+    player.y = ny;
+  }
+  player.dir = dir;
+}
+
+function shoot() {
+  if (player.cooldown > 0) return;
+  let vx = 0, vy = 0;
+  if (player.dir === 'up') vy = -6;
+  if (player.dir === 'down') vy = 6;
+  if (player.dir === 'left') vx = -6;
+  if (player.dir === 'right') vx = 6;
+  bullets.push({
+    x: player.x*CELL + CELL/2,
+    y: player.y*CELL + CELL/2,
+    vx, vy
+  });
+  player.cooldown = 15;
+}
+
+// Управление
+document.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  if (e.code === 'ArrowUp') movePlayer(0, -1, 'up');
+  if (e.code === 'ArrowDown') movePlayer(0, 1, 'down');
+  if (e.code === 'ArrowLeft') movePlayer(-1, 0, 'left');
+  if (e.code === 'ArrowRight') movePlayer(1, 0, 'right');
+  if (e.code === 'Space') shoot();
+});
+
+function updateBullets() {
+  for (let i = bullets.length-1; i >= 0; i--) {
+    const b = bullets[i];
+    b.x += b.vx;
+    b.y += b.vy;
+    // Проверка выхода за границы
+    if (
+      b.x < 0 || b.x > COLS*CELL ||
+      b.y < 0 || b.y > ROWS*CELL
+    ) {
+      bullets.splice(i,1);
+      continue;
+    }
+    // Проверка столкновения с кирпичами
+    const cx = Math.floor(b.x / CELL);
+    const cy = Math.floor(b.y / CELL);
+    if (map[cy] && map[cy][cx] === 1) {
+      map[cy][cx] = 0; // Разрушаем кирпич
+      bullets.splice(i,1);
+    }
+  }
+}
+
+function gameLoop() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawMap();
+  drawPlayer();
+  drawBullets();
+  updateBullets();
+  if (player.cooldown > 0) player.cooldown--;
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
