@@ -1,1 +1,233 @@
-<html><body>Seregamolodetch</html></body>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Тетрис</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      background: black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    canvas {
+      border: 1px solid white;
+      background: #111;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="320" height="640"></canvas>
+  <script>
+    // Размер одной клетки
+    const grid = 32;
+    // Получаем доступ к холсту
+    const canvas = document.getElementById('game');
+    const context = canvas.getContext('2d');
+
+    // Описания фигур (тетримино)
+    const tetrominos = {
+      'I': [
+        [0,0,0,0],
+        [1,1,1,1],
+        [0,0,0,0],
+        [0,0,0,0]
+      ],
+      'J': [
+        [1,0,0],
+        [1,1,1],
+        [0,0,0]
+      ],
+      'L': [
+        [0,0,1],
+        [1,1,1],
+        [0,0,0]
+      ],
+      'O': [
+        [1,1],
+        [1,1]
+      ],
+      'S': [
+        [0,1,1],
+        [1,1,0],
+        [0,0,0]
+      ],
+      'Z': [
+        [1,1,0],
+        [0,1,1],
+        [0,0,0]
+      ],
+      'T': [
+        [0,1,0],
+        [1,1,1],
+        [0,0,0]
+      ]
+    };
+
+    // Цвета фигур
+    const colors = {
+      'I': '#00f0f0',
+      'J': '#0000f0',
+      'L': '#f0a000',
+      'O': '#f0f000',
+      'S': '#00f000',
+      'Z': '#f00000',
+      'T': '#a000f0'
+    };
+
+    // Игровое поле 10x20
+    let playfield = [];
+    for (let row = -2; row < 20; row++) {
+      playfield[row] = [];
+      for (let col = 0; col < 10; col++) {
+        playfield[row][col] = 0;
+      }
+    }
+
+    // Генерация последовательности фигур
+    let tetrominoSequence = [];
+    function generateSequence() {
+      const sequence = ['I','J','L','O','S','T','Z'];
+      while (sequence.length) {
+        const rand = Math.floor(Math.random() * sequence.length);
+        tetrominoSequence.push(sequence.splice(rand, 1)[0]);
+      }
+    }
+
+    // Получение следующей фигуры
+    function getNextTetromino() {
+      if (tetrominoSequence.length === 0) generateSequence();
+      const name = tetrominoSequence.pop();
+      const matrix = tetrominos[name];
+      // Начальная позиция
+      const col = Math.floor(playfield[0].length / 2) - Math.ceil(matrix[0].length / 2);
+      const row = -2;
+      return { name, matrix, row, col };
+    }
+
+    // Текущая фигура
+    let tetromino = getNextTetromino();
+
+    // Проверка столкновений
+    function isValidMove(matrix, cellRow, cellCol) {
+      for (let row = 0; row < matrix.length; row++) {
+        for (let col = 0; col < matrix[row].length; col++) {
+          if (matrix[row][col]) {
+            let r = cellRow + row;
+            let c = cellCol + col;
+            if (c < 0 || c >= 10 || r >= 20) return false;
+            if (r >= 0 && playfield[r][c]) return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    // Фиксация фигуры на поле
+    function placeTetromino() {
+      for (let row = 0; row < tetromino.matrix.length; row++) {
+        for (let col = 0; col < tetromino.matrix[row].length; col++) {
+          if (tetromino.matrix[row][col]) {
+            if (tetromino.row + row < 0) {
+              // Игра окончена
+              alert('Игра окончена!');
+              // Сброс поля
+              for (let r = -2; r < 20; r++) {
+                playfield[r].fill(0);
+              }
+              break;
+            }
+            playfield[tetromino.row + row][tetromino.col + col] = tetromino.name;
+          }
+        }
+      }
+      // Удаление заполненных строк
+      for (let row = 19; row >= 0; ) {
+        if (playfield[row].every(cell => !!cell)) {
+          for (let r = row; r >= 0; r--) {
+            playfield[r] = playfield[r-1].slice();
+          }
+        } else {
+          row--;
+        }
+      }
+      tetromino = getNextTetromino();
+    }
+
+    // Вращение фигуры
+    function rotate(matrix) {
+      const N = matrix.length;
+      const result = [];
+      for (let i = 0; i < N; i++) {
+        result[i] = [];
+        for (let j = 0; j < N; j++) {
+          result[i][j] = matrix[N - j - 1][i];
+        }
+      }
+      return result;
+    }
+
+    // Управление
+    document.addEventListener('keydown', e => {
+      if (e.code === 'ArrowLeft') {
+        if (isValidMove(tetromino.matrix, tetromino.row, tetromino.col - 1)) tetromino.col--;
+      } else if (e.code === 'ArrowRight') {
+        if (isValidMove(tetromino.matrix, tetromino.row, tetromino.col + 1)) tetromino.col++;
+      } else if (e.code === 'ArrowDown') {
+        if (isValidMove(tetromino.matrix, tetromino.row + 1, tetromino.col)) tetromino.row++;
+      } else if (e.code === 'ArrowUp') {
+        const rotated = rotate(tetromino.matrix);
+        if (isValidMove(rotated, tetromino.row, tetromino.col)) tetromino.matrix = rotated;
+      }
+    });
+
+    // Игровой цикл
+    let count = 0;
+    function loop() {
+      requestAnimationFrame(loop);
+      count++;
+      if (count > 20) {
+        count = 0;
+        if (isValidMove(tetromino.matrix, tetromino.row + 1, tetromino.col)) {
+          tetromino.row++;
+        } else {
+          placeTetromino();
+        }
+      }
+
+      // Очистка экрана
+      context.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Рисуем поле
+      for (let row = 0; row < 20; row++) {
+        for (let col = 0; col < 10; col++) {
+          if (playfield[row][col]) {
+            const name = playfield[row][col];
+            context.fillStyle = colors[name];
+            context.fillRect(col * grid, row * grid, grid-1, grid-1);
+          }
+        }
+      }
+
+      // Рисуем текущую фигуру
+      for (let row = 0; row < tetromino.matrix.length; row++) {
+        for (let col = 0; col < tetromino.matrix[row].length; col++) {
+          if (tetromino.matrix[row][col]) {
+            context.fillStyle = colors[tetromino.name];
+            context.fillRect((tetromino.col + col) * grid, (tetromino.row + row) * grid, grid-1, grid-1);
+          }
+        }
+      }
+    }
+
+    loop();
+  </script>
+</body>
+</html>
+
