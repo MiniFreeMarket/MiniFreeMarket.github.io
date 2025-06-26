@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Выбери свою армию Warhammer 40,000</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #222; color: #eee; padding: 30px; }
+    .quiz-block { margin-bottom: 20px; }
+    select, button { font-size: 1em; padding: 5px; }
+    #result { margin-top: 30px; font-size: 1.2em; background: #333; padding: 15px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Квиз: выбери свою армию Warhammer 40,000</h1>
+
+  <div class="quiz-block">
+    <label for="superfaction">1. Выбери суперфракцию:</label><br>
+    <select id="superfaction">
+      <option value="">-- выбери --</option>
+      <option value="imperium">Империум Человечества</option>
+      <option value="chaos">Хаос</option>
+      <option value="xenos">Ксеносы</option>
+    </select>
+  </div>
+
+  <div class="quiz-block">
+    <label for="playstyle">2. Твой стиль игры:</label><br>
+    <select id="playstyle">
+      <option value="">-- выбери --</option>
+      <option value="elite">Элита, мало моделей, высокая сила</option>
+      <option value="horde">Орда, много моделей</option>
+      <option value="shooting">Дальний бой</option>
+      <option value="melee">Ближний бой</option>
+      <option value="psychic">Псионика</option>
+      <option value="mechanized">Техника и мехи</option>
+    </select>
+  </div>
+
+  <div class="quiz-block">
+    <label for="theme">3. Тема/атмосфера:</label><br>
+    <select id="theme">
+      <option value="">-- выбери --</option>
+      <option value="knights">Рыцари/герои</option>
+      <option value="aliens">Инопланетяне</option>
+      <option value="demons">Демоны/магия</option>
+      <option value="faith">Вера/религия</option>
+      <option value="technology">Технологии/киберпанк</option>
+      <option value="stealth">Скрытность/диверсии</option>
+    </select>
+  </div>
+
+  <button onclick="getArmy()">Показать подходящую армию</button>
+
+  <div id="result"></div>
+
+  <script>
+    function getArmy() {
+      const superfaction = document.getElementById('superfaction').value;
+      const playstyle = document.getElementById('playstyle').value;
+      const theme = document.getElementById('theme').value;
+      let army = "Не удалось подобрать армию. Попробуйте изменить параметры.";
+
+      // Империум
+      if (superfaction === "imperium") {
+        if (playstyle === "elite" && theme === "knights") army = "Adeptus Custodes или Imperial Knights";
+        else if (playstyle === "horde" && theme === "faith") army = "Adepta Sororitas (Сёстры Битвы)";
+        else if (playstyle === "mechanized" && theme === "technology") army = "Adeptus Mechanicus";
+        else if (playstyle === "horde" && theme === "technology") army = "Astra Militarum (Имперская Гвардия)";
+        else if (playstyle === "elite" && theme === "faith") army = "Grey Knights";
+        else if (playstyle === "melee" && theme === "knights") army = "Space Marines (выбери главу: Blood Angels, Space Wolves, Black Templars и др.)";
+        else army = "Space Marines (универсальная армия Империума)";
+      }
+      // Хаос
+      else if (superfaction === "chaos") {
+        if (playstyle === "elite" && theme === "demons") army = "Chaos Daemons";
+        else if (playstyle === "horde" && theme === "demons") army = "Death Guard или World Eaters";
+        else if (playstyle === "psychic" && theme === "demons") army = "Thousand Sons";
+        else if (playstyle === "mechanized" && theme === "knights") army = "Chaos Knights";
+        else army = "Chaos Space Marines";
+      }
+      // Ксеносы
+      else if (superfaction === "xenos") {
+        if (playstyle === "horde" && theme === "aliens") army = "Orks или Tyranids";
+        else if (playstyle === "shooting" && theme === "technology") army = "T'au Empire";
+        else if (playstyle === "elite" && theme === "aliens") army = "Necrons";
+        else if (playstyle === "stealth" && theme === "aliens") army = "Drukhari или Harlequins";
+        else if (playstyle === "horde" && theme === "stealth") army = "Genestealer Cults";
+        else if (playstyle === "elite" && theme === "technology") army = "Leagues of Votann";
+        else army = "Aeldari (Эльдары)";
+      }
+
+      document.getElementById('result').innerHTML = `<strong>Ваша армия:</strong> ${army}`;
+    }
+  </script>
+</body>
+</html>
